@@ -60,6 +60,7 @@ class choji {
 
 	private:
 		void processACore(int ind);
+		fraction most_to_reduce(int ind);
 };
 
 #endif
