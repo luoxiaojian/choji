@@ -3,64 +3,54 @@
 #define _CHOJI_H_
 
 #include <stdio.h>
-#include <map>
 #include <vector>
 #include <algorithm>
 #include <iostream>
 #include <assert.h>
 #include "fraction.h"
 
-using std::map;
 using std::vector;
 using std::sort;
 using std::cout;
 using std::endl;
 
-class task {
-	public:
-		explicit task(int tid_, int e_, int p_)
-			: tid(tid_),
-			  e(e_),
-			  p(p_),
-			  u(e_, p_),
-			  rt(1),
-			  ru(e_, p_) { }
-
-		int tid;
-		int e, p;
-		fraction u;
-
-		fraction rt, ru;
-		map<int, fraction> alloc;
+struct unit{
+	unit(int id, fraction dur)
+		: tid(id),
+		  duration(dur) { }
+	int tid;
+	fraction duration;
 };
 
-class core {
-	public:
-		explicit core(int pid_, const fraction& s_)
-			: pid(pid_),
-			  s(s_),
-			  rt(1) { }
-
-		int pid;
-		fraction s;
-		fraction rt;
-		map<int, fraction> alloc;
+struct tstate{
+	tstate(int id)
+		: tid(id) { }
+	int tid;
+	fraction laxity;
+	fraction *alloc;
+	fraction remaining;
 };
 
 class choji {
 	public:
 		explicit choji(FILE *fin);
-
 		void run();
 		void output();
-
-		vector<task> tlist;
-		vector<core> clist;
-		int m, n;
+		bool checkAlloc();
+		void generateSchedule();
+		bool checkSchedule();
 
 	private:
 		void processACore(int ind);
 		fraction most_to_reduce(int ind);
+
+		fraction *speed;
+		fraction *ut;
+		fraction *trt, *crt, *tru;
+		fraction **alloc;
+		int *execute, *period;
+		int m, n;
+		vector<unit> *sched;
 };
 
 #endif

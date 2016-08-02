@@ -14,6 +14,8 @@ int main(int argc, char **argv) {
 	FILE *fin=fopen(argv[1], "r");
 	choji cj(fin);
 	cj.run();
-	cj.output();
+//	cj.output();
+	if(!cj.checkSchedule()) 
+		cout<<"Schedule failed..."<<argv[1]<<endl;
 	return 0;
 }
