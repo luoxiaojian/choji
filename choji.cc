@@ -144,23 +144,61 @@ bool choji::checkAlloc() {
 	return true;
 }
 
-static bool urgent(const tstate& t1, const tstate& t2) {
-	return t1.laxity<t2.laxity;
-}
-
 void choji::generateSchedule() {
-	struct tstate *state=(struct tstate*)malloc(sizeof(struct tstate)*n);		
+	laxity=new fraction[n];
 	for(int i=0; i<n; i++) {
-		state[i].tid=i;
-		state[i].alloc=new fraction[m];
-		for(int j=0; j<m; j++)
-			state[i].alloc[j]=alloc[i][j];
-		state[i].remaining=ut[i];
-		state[i].laxity=1-ut[i];
+		fraction sum;
+		for(int j=0; j<m; j++) {
+			sum=sum+alloc[i][j];
+		}
+		laxity[i]=1-sum;
 	}
 	fraction cur=0;
 	while(!(cur==1)) {
-		sort(&state[0], &state[n], urgent);
-		for
+		set<int> urgent;
+		for(int i=0; i<n; i++) {
+			if(laxity[i]==0)
+				urgent.insert(i);
+		}
+		int *list=new int[m];
+		matcher ma(m, n);
+		ma.loadGraph(alloc);
+		ma.loadUrgent(urgent);
+		ma.hungary(list);
+		fraction dur=1;
+		for(int i=0; i<n; i++) {
+			bool choosed=false;
+			int pid=-1;
+			for(int j=0; j<m; j++) {
+				if(list[j]==i) {
+					choosed=true;
+					pid=j;
+					break;
+				}
+			}
+			if(choosed) {
+				dur=MIN(dur, alloc[i][pid]);
+			} else {
+				dur=MIN(dur, laxity[i]);
+			}
+		}
+		for(int i=0; i<n; i++) {
+			bool choosed=false;
+			int pid=-1;
+			for(int j=0; j<m; j++) {
+				if(list[j]==i) {
+					choosed=true;
+					pid=j;
+					break;
+				}
+				if(choosed) {
+					sched[pid].push_back(unit(i, dur));
+					alloc[i][pid]=alloc[i][pid]-dur;
+				} else {
+					laxity[i]=laxity[i]-dur;	
+				}
+			}
+		}
+		cur=cur+dur;
 	}
 }
