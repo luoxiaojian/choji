@@ -9,36 +9,30 @@ static bool greater(const fraction& f1, const fraction& f2) {
 
 choji::choji(FILE *fin) {
 	fscanf(fin, "%d%d", &n, &m);
-	speed=new fraction[m];
-	ut=new fraction[n];
-	trt=new fraction[n];
-	crt=new fraction[m];
-	execute=new int[n];
-	period=new int[n];
-	alloc=new fraction*[n];
+	alloc=new vector<fraction>[n];
+	sched=new vector<unit>[m];
 	for(int i=0; i<n; i++) {
 		int e, p;
 		fscanf(fin, "%d%d", &e, &p);
-		ut[i]=fraction(e, p);
-		execute[i]=e;
-		period[i]=p;
-		trt[i]=1;
-		tru[i]=ut[i];
+		ut.push_back(fraction(e, p));
+		execute.push_back(e);
+		period.push_back(p);
+		trt.push_back(1);
+		tru.push_back(ut[i]);
 	}
 	for(int i=0; i<m; i++) {
 		int a, b;
 		fscanf(fin, "%d%d", &a, &b);
-		speed[i]=fraction(a, b);
-		crt[i]=1;
+		speed.push_back(fraction(a, b));
+		crt.push_back(1);
 	}
-	for(int i=0; i<n; i++)
-		alloc[i]=new fraction[m];
+	speed.push_back(0);
+	crt.push_back(1);
 	for(int i=0; i<n; i++) 
 		for(int j=0; j<m; j++) 
-			alloc[i][j]=0;
+			alloc[i].push_back(0);
 	
-	sched=new vector<unit>[m];
-	sort(&speed[0], &speed[m], greater);
+	sort(speed.begin(), speed.end(), greater);
 }
 
 void choji::run() {
@@ -46,7 +40,7 @@ void choji::run() {
 		processACore(i);
 }
 
-void choji::output() {
+void choji::outputAlloc() {
 	for(int i=0; i<m; i++) {
 		cout<<"P"<<i<<":\t";
 		for(int j=0; j<n; j++) 
@@ -57,7 +51,7 @@ void choji::output() {
 
 fraction choji::most_to_reduce(int ind) {
 	fraction sum=0;
-	fraction diff=speed[ind+1]-speed[ind];
+	fraction diff=speed[ind]-speed[ind+1];
 	assert(!(diff==0));
 	for(int i=ind-1; i>=0; i--) {
 		fraction cur=crt[i]*(speed[i]-speed[ind+1])/diff;
@@ -128,43 +122,62 @@ bool choji::checkAlloc() {
 			su=su+alloc[i][j]*speed[j];
 			st=st+alloc[i][j];
 		}
-		if(!(su==ut[i]))
+		if(!(su==ut[i])) {
 			return false;
-		if(!(st>1))
+		}
+		if(st>1) {
 			return false;
+		}
 	}
 	for(int i=0; i<m; i++) {
 		fraction st=0;	
 		for(int j=0; j<n; j++) {
 			st=st+alloc[j][i];
 		}
-		if(!(st==1))
+		if(!(st==1)) {
 			return false;
+		}
 	}
 	return true;
 }
 
 void choji::generateSchedule() {
-	laxity=new fraction[n];
 	for(int i=0; i<n; i++) {
 		fraction sum;
 		for(int j=0; j<m; j++) {
 			sum=sum+alloc[i][j];
 		}
-		laxity[i]=1-sum;
+		laxity.push_back(1-sum);
 	}
 	fraction cur=0;
 	while(!(cur==1)) {
 		set<int> urgent;
+		cout<<"cur="<<cur.strval()<<endl;
+		outputAlloc();
 		for(int i=0; i<n; i++) {
-			if(laxity[i]==0)
-				urgent.insert(i);
+			if(laxity[i]==0) {
+				fraction sum=0;
+				for(int j=0; j<m; j++)
+					sum=sum+alloc[i][j];
+				if(!(sum==0))
+					urgent.insert(i);
+			}
 		}
+		cout<<"urgent tasks: ";
+		for(set<int>::iterator it=urgent.begin(); it!=urgent.end(); it++) {
+			cout<<*it<<" ";
+		}
+		cout<<endl;
 		int *list=new int[m];
 		matcher ma(m, n);
 		ma.loadGraph(alloc);
 		ma.loadUrgent(urgent);
 		ma.hungary(list);
+		cout<<"choosed tasks: ";
+		for(int i=0; i<m; i++) {
+			cout<<list[i]<<" ";
+		}
+		cout<<endl;
 		fraction dur=1;
 		for(int i=0; i<n; i++) {
 			bool choosed=false;
@@ -182,6 +195,7 @@ void choji::generateSchedule() {
 				dur=MIN(dur, laxity[i]);
 			}
 		}
+		//cout<<"dur="<<dur.strval()<<endl;
 		for(int i=0; i<n; i++) {
 			bool choosed=false;
 			int pid=-1;
@@ -191,14 +205,71 @@ void choji::generateSchedule() {
 					pid=j;
 					break;
 				}
-				if(choosed) {
-					sched[pid].push_back(unit(i, dur));
-					alloc[i][pid]=alloc[i][pid]-dur;
-				} else {
-					laxity[i]=laxity[i]-dur;	
-				}
+			}
+			if(choosed) {
+				//cout<<"choose task"<<i<<" on processor"<<pid<<" for "<<dur.strval()<<endl;
+				sched[pid].push_back(unit(i, dur));
+				alloc[i][pid]=alloc[i][pid]-dur;
+			} else {
+				laxity[i]=laxity[i]-dur;	
 			}
 		}
 		cur=cur+dur;
+	}
+}
+
+bool choji::checkSchedule() {
+	for(int i=0; i<n; i++) {
+		for(int j=0; j<m; j++) {
+			if(!(alloc[i][j]==0))
+				return false;
+		}
+	}
+	int events=sched[0].size();
+	for(int i=1; i<m; i++) {
+		if(events!=sched[i].size()) {
+			cout<<1<<endl;
+			return false;
+		}
+	}
+	for(int i=0; i<events; i++) {
+		set<int> active;
+		for(int j=0; j<m; j++) {
+			active.insert(sched[j][i].tid);
+		}
+		if(active.size()!=m) {
+			cout<<2<<endl;
+			return false;
+		}
+	}
+	vector<fraction> alloced(n);
+	for(int i=0; i<n; i++) {
+		alloced[i]=0;
+	}
+	for(int i=0; i<m; i++) {
+		for(int j=0; j<events; j++) {
+			int tid=sched[i][j].tid;
+			fraction u=sched[i][j].duration*speed[i];
+			alloced[tid]=alloced[tid]+u;
+		}
+	}
+	for(int i=0; i<n; i++) {
+		if(!(alloced[i]==ut[i])) {
+			cout<<"alloced="<<alloced[i].strval()<<" while ut="<<ut[i].strval()<<endl;
+			cout<<3<<endl;
+			return false;
+		}
+	}
+	return true;
+}
+
+void choji::outputSched() {
+	int events=sched[0].size();
+	for(int i=0; i<m; i++) {
+		cout<<"p"<<i<<":\t";
+		for(int j=0; j<events; j++) {
+			cout<<"["<<sched[i][j].tid<<", "<<sched[i][j].duration.strval()<<"]\t";
+		}
+		cout<<endl;
 	}
 }

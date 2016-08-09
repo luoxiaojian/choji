@@ -15,7 +15,13 @@ int main(int argc, char **argv) {
 	choji cj(fin);
 	cj.run();
 //	cj.output();
-	if(!cj.checkSchedule()) 
-		cout<<"Schedule failed..."<<argv[1]<<endl;
+	if(!cj.checkAlloc()) 
+		cout<<"Alloc failed..."<<argv[1]<<endl;
+//	cj.outputAlloc();
+	cj.generateSchedule();
+	if(!cj.checkSchedule())
+		cout<<"Sched failed..."<<argv[1]<<endl;
+//	cj.outputSched();
+
 	return 0;
 }

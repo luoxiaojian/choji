@@ -14,10 +14,10 @@ matcher::matcher(int m_, int n_) {
 	memset(urgent, -1, sizeof(urgent));
 }
 
-void matcher::loadGraph(fraction **alloc) {
+void matcher::loadGraph(vector<fraction> *alloc) {
 	for(int i=0; i<m; i++) {
 		for(int j=0; j<n; j++) {
-			if(alloc[i][j]>0) 
+			if(alloc[j][i]>0) 
 				g[i][j]=1;
 			else
 				g[i][j]=0;
@@ -57,6 +57,14 @@ bool matcher::isUrgent(int v) {
 	return false;
 }
 
+bool matcher::isMatched(int v) {
+	for(int i=0; i<m; i++) {
+		if(match[i]==v)
+			return true;
+	}
+	return false;
+}
+
 bool matcher::dfsPath(int u) {
 	int v=match[u];
 	pathc.push_back(u);
@@ -79,6 +87,19 @@ bool matcher::dfsPath(int u) {
 }
 
 void matcher::matchUrgent() {
+	cout<<"------------------------------------"<<endl;
+	for(int i=0; i<m; i++) {
+		cout<<"p"<<i<<":\t";
+		for(int j=0; j<n; j++) {
+			if(g[i][j]==1)
+				cout<<j<<" ";
+		}
+		cout<<endl;
+	}
+	cout<<"urgent: ";
+	for(int i=0; i<unum; i++)
+		cout<<urgent[i]<<" ";
+	cout<<endl;
 	for(int i=0; i<unum; i++) {
 		if(isMatched(urgent[i]))
 			continue;
@@ -95,6 +116,7 @@ void matcher::matchUrgent() {
 					match[pathc[k]]=patht[k-1];
 				pathc.clear();
 				patht.clear();
+				break;
 			}
 		}
 		assert(flag);
@@ -113,8 +135,14 @@ void matcher::hungary(int *sched) {
 		if(dfs(u))
 			count++;
 	}
+//	for(int i=0; i<m; i++)
+//		cout<<"p"<<i<<"->t"<<match[i]<<", ";
+//	cout<<endl;
 	assert(m==count);
 	matchUrgent();
+//	for(int i=0; i<m; i++)
+//		cout<<"p"<<i<<"->t"<<match[i]<<", ";
+//	cout<<endl;
 	for(int i=0; i<m; i++)
 		sched[i]=match[i];
 }

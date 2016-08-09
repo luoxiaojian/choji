@@ -29,22 +29,24 @@ class choji {
 	public:
 		explicit choji(FILE *fin);
 		void run();
-		void output();
+		void outputAlloc();
 		bool checkAlloc();
 		void generateSchedule();
 		bool checkSchedule();
+		void outputSched();
 
 	private:
 		void processACore(int ind);
 		fraction most_to_reduce(int ind);
 
-		fraction *speed;
-		fraction *ut;
-		fraction *trt, *crt, *tru;
-		fraction **alloc;
+		vector<fraction> speed;
+		vector<fraction> ut;
+		vector<fraction> trt, crt, tru;
+		vector<fraction> *alloc;
+		vector<fraction> laxity;
 
-		fraction *laxity;
-		int *execute, *period;
+		vector<int> execute, period;
+
 		int m, n;
 		vector<unit> *sched;
 };

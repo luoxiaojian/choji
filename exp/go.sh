@@ -8,9 +8,7 @@ do
 	for tsname in $(ls $tasksetDir/${dirname}/* )
 	do
 		./choji $tsname >> $targetDir/$dirname
-		if [ $? = 0 ]; then
-			echo
-		else
+		if [ $? != 0 ]; then
 			echo $tsname "error"
 		fi
 	done

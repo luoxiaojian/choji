@@ -15,7 +15,7 @@ using std::vector;
 class matcher {
 	public:
 		explicit matcher(int m_, int n_);
-		void loadGraph(fraction **alloc);
+		void loadGraph(vector<fraction> *alloc);
 		void loadUrgent(const set<int>& urg);
 		void hungary(int *sched);
 
