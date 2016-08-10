@@ -34,9 +34,13 @@ class choji {
 		void generateSchedule();
 		bool checkSchedule();
 		void outputSched();
+		void getStat(int *migration, int *preemption);
+		void getMStat(int *migration, int *preemption);
 
 	private:
 		void processACore(int ind);
+		void postProcess();
+		void mPostProcess();
 		fraction most_to_reduce(int ind);
 
 		vector<fraction> speed;
@@ -49,6 +53,8 @@ class choji {
 
 		int m, n;
 		vector<unit> *sched;
+		vector<unit> *result;
+		vector<unit> *mresult;
 };
 
 #endif

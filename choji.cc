@@ -11,6 +11,8 @@ choji::choji(FILE *fin) {
 	fscanf(fin, "%d%d", &n, &m);
 	alloc=new vector<fraction>[n];
 	sched=new vector<unit>[m];
+	result=new vector<unit>[m];
+	mresult=new vector<unit>[m];
 	for(int i=0; i<n; i++) {
 		int e, p;
 		fscanf(fin, "%d%d", &e, &p);
@@ -271,5 +273,97 @@ void choji::outputSched() {
 			cout<<"["<<sched[i][j].tid<<", "<<sched[i][j].duration.strval()<<"]\t";
 		}
 		cout<<endl;
+	}
+}
+
+void choji::postProcess() {
+	for(int i=0; i<m; i++) {
+		for(vector<unit>::iterator it=sched[i].begin(); it!=sched[i].end(); it++) {
+			result[i].push_back(*it);
+		}
+		vector<unit>::iterator cur=result[i].begin();
+		while(cur!=result[i].end()) {
+			vector<unit>::iterator next=cur+1;
+			if(next!=result[i].end() && cur->tid==next->tid) {
+				cur->duration=cur->duration+next->duration;
+				result[i].erase(next);
+			} else {
+				cur=next;
+			}
+		}
+	}
+}
+
+void choji::mPostProcess() {
+	for(int i=0; i<m; i++) {
+		for(vector<unit>::iterator it=sched[i].begin(); it!=sched[i].end(); it++)
+			mresult[i].push_back(*it);
+		for(vector<unit>::reverse_iterator rit=sched[i].rbegin(); rit!=sched[i].rend(); rit++)
+			mresult[i].push_back(*rit);
+		vector<unit>::iterator cur=mresult[i].begin();
+		while(cur!=mresult[i].end()) {
+			vector<unit>::iterator next=cur+1;
+			if(next!=mresult[i].end() && cur->tid==next->tid) {
+				cur->duration=cur->duration+next->duration;
+				mresult[i].erase(next);
+			} else {
+				cur=next;
+			}
+		}
+	}
+}
+
+struct exec{
+	exec(int p, fraction b, fraction e)
+		: pid(p),
+		  begin(b),
+		  end(e) { }
+	int pid;
+	fraction begin, end;
+};
+
+static bool earlier(const struct exec& e1, const struct exec& e2) {
+	return !(e1.end>e2.begin);
+}
+
+void choji::getStat(int *migration, int *preemption) {
+	vector<exec> *texec=new vector<exec>[n];
+	for(int i=0; i<m; i++) {
+		fraction cur=0;
+		for(vector<unit>::iterator it=result[i].begin(); it!=result[i].end(); it++) {
+			texec[it->tid].push_back(exec(i, cur, cur+it->duration));
+			cur=cur+it->duration;
+		}
+	}
+	for(int i=0; i<n; i++) {
+		migration[i]=0;
+		sort(texec[i].begin(), texec[i].end(), earlier);
+		int events=texec[i].size();
+		preemption[i]=events;
+		for(int j=1; j<events; j++) {
+			if(texec[i][j].pid!=texec[i][j-1].pid)
+				migration[i]++;
+		}
+	}
+}
+void choji::getMStat(int *migration, int *preemption) {
+	vector<exec> *texec=new vector<exec>[n];
+	for(int i=0; i<m; i++) {
+		fraction cur=0;
+		for(vector<unit>::iterator it=result[i].begin(); it!=result[i].end(); it++) {
+			texec[it->tid].push_back(exec(i, cur, cur+it->duration));
+			cur=cur+it->duration;
+		}
+	}
+	for(int i=0; i<n; i++) {
+		migration[i]=0;
+		sort(texec[i].begin(), texec[i].end(), earlier);
+		int events=texec[i].size();
+		preemption[i]=events/2;
+		for(int j=1; j<events; j++) {
+			if(texec[i][j].pid!=texec[i][j-1].pid)
+				migration[i]++;
+		}
+		migration[i]=migration[i]/2;
 	}
 }
